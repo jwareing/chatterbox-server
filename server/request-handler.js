@@ -12,7 +12,7 @@ this file and include it in basic-server.js so that it actually works.
 
 **************************************************************/
 var parseURL = require('url');
-
+var fs = require('fs');
 exports.requestHandler = function(request, response) {
   // Request and Response come from node's http module.
   //
@@ -30,13 +30,12 @@ exports.requestHandler = function(request, response) {
   // console.logs in your code.
   console.log("Serving request type " + request.method + " for url " + request.url);
 
-
-
   // The outgoing status.
   var statusCode = 200;
 
-  // See the note below about CORS headers.
+  // See the note below about CORS head ers.
   var headers = defaultCorsHeaders;
+
 
   var pathName = parseURL.parse(request.url).pathname;
 
@@ -47,7 +46,6 @@ exports.requestHandler = function(request, response) {
   headers['Content-Type'] = "application/json";
 
   if (pathName === '/classes/messages' || pathName === '/classes/room1'){
-
 
     if(request.method === 'OPTIONS'){
       response.writeHead(statusCode, headers)
@@ -87,17 +85,54 @@ exports.requestHandler = function(request, response) {
         response.writeHead(201, headers);
         results.push(JSON.parse(requestBody));
         var myResponse = JSON.stringify({'results': results});
+        fs.writeFile("./log.txt", myResponse, function(err){
+          if(err) {
+            console.log(err);
+          }
+
+          console.log('Log created')
+        });
+
         response.end(myResponse);
       });
     };
   }
   else {
+    console.log(pathName);
+    fs.readFile('client/index.html', function (err,data) {
+      headers['Content-Type'] = "text/html";
+      console.log('test');
+      if (err) {
+            console.log('error'); 
+        }       
+      else{
+        response.writeHeader(200, headers);
+        response.end(data);
+      }
+    });
     response.writeHead(404, headers);
     response.end();
   }
   //response.end(myResponse);
 };
+
+
 var results = [];
+
+fs.readFile("./log.txt", 'utf8',function(err,data){
+  if (err){
+    console.log('error');
+  }
+  else{
+    var oldLog = JSON.parse(data);
+    var oldMessages = oldLog.results;
+    for (var i = 0; i< oldMessages.length; i++){
+      console.log(oldMessages[i]);
+      results.push(oldMessages[i]);
+    }
+   // results.push(data['results']);
+  }
+});
 // These headers will allow Cross-Origin Resource Sharing (CORS).
 // This code allows this server to talk to websites that
 // are on different domains, for instance, your chat client.
